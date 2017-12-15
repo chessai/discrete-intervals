@@ -25,8 +25,7 @@ instance Semigroup IOrdering where
 
   L <> G = B
   L <> L = L
-
-
+  
   G <> L = B
   G <> G = G
   E <> k = k

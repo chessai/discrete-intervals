@@ -1,26 +1,39 @@
 {-# LANGUAGE BangPatterns #-}
 
 module Data.Interval
-  ( Interval(..)
-  , IOrdering(..), cmp, cmp'
+  ( -- * Interval type 
+    Interval(..)
+    
+    -- * Construction
   , (...)
   , (+/-)
   , interval
   , empty
   , singleton
+  , symmetric 
+  
+    -- * Combine
+  , hull
+
+    -- * Querying 
   , inf
   , sup
+  , width 
   , valid
   , invalid
   , isEmpty
   , singular
-  , toList
   , member
   , notMember
-  , hull
+
+    -- * Conversion 
+  , toList
+ 
+    -- * Ordering 
+  , IOrdering(..), cmp, cmp'
   , contains
   , isSubsetOf
-  , adjacent
+  , adjacent 
   , (<!)
   , (<=!)
   , (==!)
@@ -53,6 +66,8 @@ instance (Enum a, Ord a) => Monoid (Interval a) where
   {-# INLINE mappend #-}
 
 instance Show a => Show (Interval a) where
+  showsPrec _ Empty =
+    showString " Empty "
   showsPrec n (I a b) =
     showParen (n > 3) $
       showsPrec 3 a .
