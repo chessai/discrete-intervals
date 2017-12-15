@@ -30,7 +30,6 @@ module Data.Interval
   , toList
  
     -- * Ordering 
-  , IOrdering(..), cmp, cmp'
   , contains
   , isSubsetOf
   , adjacent 
@@ -48,12 +47,17 @@ module Data.Interval
   , (>=?)
   ) where 
 
-import Data.IOrdering (IOrdering(..))
 import Data.Semigroup (Semigroup(..))
 
 -- | A Discrete Interval.
 data Interval a = I !a !a | Empty
-  deriving (Eq, Ord)
+  deriving (Eq)
+
+instance (Ord a) => Ord (Interval a) where
+  compare (I a b) (I x y)
+    = case compare a x of
+        EQ -> compare b y
+        r  -> r
 
 instance (Enum a, Ord a) => Semigroup (Interval a) where
   (<>) = hull
@@ -106,19 +110,6 @@ inf (I a _) = a
 sup :: (Enum a, Ord a) => Interval a -> a
 sup (I _ b) = b
 {-# INLINE sup #-}
-
-cmp :: (Enum a, Ord a) => Interval a -> Interval a -> IOrdering
-cmp x y
-  | x ==! y = E
-  | x <!  y = L
-  | x >!  y = G
-  | x <=! y = ONeg
-  | x >=! y = OPos
-{-# INLINE cmp #-}
-
-cmp' :: (Enum a, Ord a) => Interval a -> Interval a -> Interval a -> IOrdering
-cmp' x y z = (cmp y x) <> (cmp y z)
-{-# INLINE cmp' #-}
 
 valid :: (Enum a, Ord a) => Interval a -> Bool
 valid x = inf x <= sup x
