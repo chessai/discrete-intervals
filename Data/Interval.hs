@@ -22,6 +22,7 @@ module Data.Interval
   , valid
   , invalid
   , isEmpty
+  , isNonEmpty 
   , singular
   , member
   , notMember
@@ -32,7 +33,9 @@ module Data.Interval
     -- * Ordering 
   , contains
   , isSubsetOf
-  , adjacent 
+  , adjacent
+  , mergeable
+  , overlaps
   , (<!)
   , (<=!)
   , (==!)
@@ -45,6 +48,8 @@ module Data.Interval
   , (/=?)
   , (>?) 
   , (>=?)
+  , (||?)
+  , (++?)
   ) where 
 
 import Data.Semigroup (Semigroup(..))
@@ -103,6 +108,10 @@ singleton :: (Enum a, Ord a) => a -> Interval a
 singleton a = a ... a
 {-# INLINE singleton #-}
 
+symmetric :: (Enum a, Num a, Ord a) => a -> Interval a
+symmetric x = negate x ... x
+{-# INLINE symmetric #-}
+
 inf :: (Enum a, Ord a) => Interval a -> a
 inf (I a _) = a
 {-# INLINE inf #-}
@@ -112,7 +121,7 @@ sup (I _ b) = b
 {-# INLINE sup #-}
 
 valid :: (Enum a, Ord a) => Interval a -> Bool
-valid x = inf x <= sup x
+valid x = isNonEmpty x && inf x <= sup x
 {-# INLINE valid #-}
 
 invalid :: (Enum a, Ord a) => Interval a -> Bool
@@ -123,9 +132,17 @@ isEmpty :: (Enum a, Ord a) => Interval a -> Bool
 isEmpty x = x == Empty
 {-# INLINE isEmpty #-}
 
+isNonEmpty :: (Enum a, Ord a) => Interval a -> Bool
+isNonEmpty = not . isEmpty
+{-# INLINE isNonEmpty #-}
+
 singular :: (Enum a, Ord a) => Interval a -> Bool
 singular x = valid x && inf x == sup x
 {-# INLINE singular #-}
+
+width :: (Enum a, Num a, Ord a) => Interval a -> a
+width (I a b) = succ $ b - a
+{-# INLINE width #-}
 
 toList :: (Enum a, Ord a) => Interval a -> [a]
 toList (I a b) = [a..b]
@@ -141,8 +158,8 @@ notMember x xs = not (member x xs)
 
 hull :: (Enum a, Ord a) => Interval a -> Interval a -> Interval a
 hull x y
-  | (invalid x || isEmpty x) = y
-  | (invalid y || isEmpty y) = x 
+  | invalid x = y
+  | invalid y = x 
   | otherwise = min (inf x) (inf y) ... max (sup x) (sup y)
 {-# INLINE hull #-}
 
@@ -159,6 +176,14 @@ adjacent :: (Enum a, Ord a) => Interval a -> Interval a -> Bool
 adjacent x y = succ (sup x) == inf y || succ (sup y) == inf x
 {-# INLINE adjacent #-}
 
+overlaps :: (Enum a, Ord a) => Interval a -> Interval a -> Bool
+overlaps = (==?)
+{-# INLINE overlaps #-}
+
+mergeable :: (Enum a, Ord a) => Interval a -> Interval a -> Bool
+mergeable = (++?)
+{-# INLINE mergeable #-}
+
 -- | For all @x@ in @X@, @y@ in @Y@. @x '<' y@
 (<!)  ::(Enum a, Ord a)=> Interval a -> Interval a -> Bool
 x <! y = sup x < inf y
@@ -173,7 +198,6 @@ x <=! y = sup x <= inf y
 (==!) :: (Enum a, Eq a, Ord a) => Interval a -> Interval a -> Bool
 x ==! y = inf x == inf y && sup x == sup y
 {-# INLINE (==!) #-}
-
 
 -- | For all @x@ in @X@, @y@ in @Y@. @x '/=' y@
 (/=!) ::(Enum a, Ord a)=> Interval a -> Interval a -> Bool
@@ -220,10 +244,12 @@ x >? y = sup x > inf y
 x >=? y = sup x >= inf y
 {-# INLINE (>=?) #-}
 
-width :: (Enum a, Num a, Ord a) => Interval a -> a
-width (I a b) = succ $ b - a
-{-# INLINE width #-}
+-- | Is @X@ adjacent to @Y@?
+(||?) :: (Enum a, Ord a) => Interval a -> Interval a -> Bool
+x ||? y = adjacent x y
+{-# INLINE (||?) #-}
 
-symmetric :: (Enum a, Num a, Ord a) => a -> Interval a
-symmetric x = negate x ... x
-{-# INLINE symmetric #-}
+-- | Is @X@ mergeable (overlapping or adjacent) with @Y@?
+(++?) :: (Enum a, Ord a) => Interval a -> Interval a -> Bool
+x ++? y = x ||? y || x ==? y
+{-# INLINE (++?) #-}

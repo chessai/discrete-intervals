@@ -1,5 +1,5 @@
 name:              discrete-intervals
-version:           0.0.2
+version:           0.0.3
 synopsis:          Discrete Intervals
 description:       
   A 'Data.Interval' is a closed, convex set of discrete values.
