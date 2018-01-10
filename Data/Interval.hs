@@ -36,6 +36,9 @@ module Data.Interval
   , adjacent
   , mergeable
   , overlaps
+  , sortAsc
+  , sortDesc
+  , collapse 
   , (<!)
   , (<=!)
   , (==!)
@@ -52,13 +55,17 @@ module Data.Interval
   , (++?)
   ) where 
 
+import qualified Data.List as L
 import Data.Semigroup (Semigroup(..))
 
 -- | A Discrete Interval.
 data Interval a = I !a !a | Empty
-  deriving (Eq)
 
-instance (Ord a) => Ord (Interval a) where
+instance (Eq a, Enum a, Ord a) => Eq (Interval a) where
+  (==) = (==!)
+  {-# INLINE (==) #-}
+
+instance (Enum a, Ord a) => Ord (Interval a) where
   compare (I a b) (I x y)
     = case compare a x of
         EQ -> compare b y
@@ -68,7 +75,7 @@ instance (Enum a, Ord a) => Semigroup (Interval a) where
   (<>) = hull
   {-# INLINE (<>) #-}
 
-instance (Enum a, Ord a) => Monoid (Interval a) where
+instance (Enum a, Ord a, Monoid a) => Monoid (Interval a) where
   mempty = empty
   {-# INLINE mempty #-} 
   mappend = (<>)
@@ -91,7 +98,7 @@ a +/- b = a - b ... a + b
 {-# INLINE (+/-) #-}
 
 (...) :: (Enum a, Ord a) => a -> a -> Interval a
-(...) = I
+(...) = interval
 {-# INLINE (...) #-}
 
 interval :: (Enum a, Ord a) => a -> a -> Interval a
@@ -112,7 +119,7 @@ symmetric :: (Enum a, Num a, Ord a) => a -> Interval a
 symmetric x = negate x ... x
 {-# INLINE symmetric #-}
 
-inf :: (Enum a, Ord a) => Interval a -> a
+inf :: (Enum a, Ord a) => Interval a -> a 
 inf (I a _) = a
 {-# INLINE inf #-}
 
@@ -148,6 +155,32 @@ toList :: (Enum a, Ord a) => Interval a -> [a]
 toList (I a b) = [a..b]
 {-# INLINE toList #-}
 
+sortAsc :: (Enum a, Ord a) => [Interval a] -> [Interval a]
+sortAsc = L.sortBy go
+  where
+    go :: (Enum a, Ord a) => Interval a -> Interval a -> Ordering
+    go u v
+      | inf u < inf v = LT
+      | inf u > inf v = GT
+      | otherwise     = EQ
+
+sortDesc :: (Enum a, Ord a) => [Interval a] -> [Interval a]
+sortDesc = L.sortBy go
+  where
+    go :: (Enum a, Ord a) => Interval a -> Interval a -> Ordering
+    go u v
+      | inf u < inf v = GT
+      | inf u > inf v = LT
+      | otherwise     = EQ
+
+collapse :: (Enum a, Ord a) => [Interval a] -> [Interval a]
+collapse []  = []
+collapse [x] = [x]
+collapse !xs  = go (sortDesc xs)
+  where
+    go :: (Enum a, Ord a) => [Interval a] -> [Interval a]
+    go (x:y:ys) = if x ++? y then (x <> y) : collapse ys else x : collapse (y : ys)
+
 member :: (Enum a, Ord a) => a -> Interval a -> Bool
 member x (I a b) = x >= a && x <= b
 {-# INLINE member #-}
@@ -164,7 +197,7 @@ hull x y
 {-# INLINE hull #-}
 
 contains :: (Enum a, Ord a) => Interval a -> Interval a -> Bool
-contains x y = (invalid y)
+contains x y = invalid y
             || (valid x && inf x <= inf y && sup y <= sup x)
 {-# INLINE contains #-}
 
