@@ -32,9 +32,6 @@ let
         doCheck = pkgs.lib.elem args.pname [ "discrete-intervals" ]; 
         doHaddock = false;
       });
-      
-      #quickcheck-classes = cp "quickcheck-classes";
-
       discrete-intervals = build "discrete-intervals" ./.;
     };
   };
