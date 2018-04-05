@@ -6,8 +6,8 @@ mkDerivation {
   version = "0.0.1.0";
   src = fetchgit {
     url = "https://github.com/chessai/semirings.git";
-    sha256 = "155km9q9h1j50n3qqqdn62f7znbi8pfvfjj29izn4y0lcs740vp6";
-    rev = "ed0238862becf5ae459bc796c0f95def8aa034af";
+    sha256 = "12g7yhrxz928frk8lv9jjmkvy30zdmyah5zfljyl5rwqxzd12br1";
+    rev = "b4cbe40acb75680fa6ea902657e443735e7bb513";
   };
   libraryHaskellDepends = [
     base containers hashable log-domain primitive unordered-containers
