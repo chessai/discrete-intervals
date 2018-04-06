@@ -44,15 +44,8 @@ mergeableR :: (Enum a, Ord a, Semiring a) => Interval a -> Interval a -> Rel
 mergeableR x y = mi x y + oi x y
 
 -- assume sorted in ascending order
--- BORING list collapse
 coll :: (Enum a, Ord a, Semiring a) => [Interval a] -> [Interval a]
 coll = coll' (:) (\x y -> getRel $ mergeableL x y)
-
---coll []  = []
---coll [x] = [x]
---coll (x:y:ys)
---  | getRel $ mergeableL x y = coll ((x <> y) : ys)
---  | otherwise = x : coll (y : ys)
 
 -- super amazing GENERALISED FOLDABLE cOLLAPSE
 -- (((POWER)))
@@ -78,26 +71,8 @@ coll' cons f xs
     x = fromJust $ get 0 xs
     y = fromJust $ get 1 xs
     ys = delete cons y (delete cons x xs)
---  
---  
---  go xs
---  where
---    go ys
---      | f x y =
---          (x <> y) `cons` (coll' cons ((delete cons x ys) + (delete cons y ys)))
---      | otherwise =
---           x `cons` coll' cons (delete cons x ys)
---    x = fromJust $ get 0 xs
---    y = fromJust $ get 1 xs
 
-merge :: Semigroup a => (a -> a -> Bool) -> [a] -> [a]
-merge _ [] = []
-merge _ [x] = [x]
-merge f (x:y:xs) = if f x y
-  then merge f ((x<>y):xs)
-  else x : merge f (y:xs)
-
--- ^ Delete an element from a foldable structure.
+-- ^ Delete the first occurrence of an element from a foldable structure.
 delete
   :: forall a t.
      (Foldable t, Eq a, Semiring (t a))
@@ -112,16 +87,18 @@ delete cons a xs = foldr f (const zero) xs False
       | x == a && not found = g True
       | otherwise           = x `cons` g found
 
+-- | delete the nth element from a foldable.
 deleteN :: (Foldable f, Semiring (f a)) => (a -> f a -> f a) -> Int -> f a -> f a
 deleteN cons n xs = flipTfo xs $ folded . ifiltered (\i _ -> i /= n)
   where
     flipTfo = flip toFoldableOf
     toFoldableOf l = foldrOf l cons zero
 
+-- | delete the first occurrence of an element from a list.
 deleteList' :: forall a. (Eq a, Semiring a) => a -> [a] -> [a]
 deleteList' = delete (:)
 
--- ^ access the nth element of a foldable structure.
+-- | access the nth element of a foldable structure.
 get :: (Foldable t) => Int -> t a -> Maybe a
 get n = either pure (\_ -> Nothing) . foldlM hk n
   where
