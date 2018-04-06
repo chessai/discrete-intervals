@@ -46,7 +46,7 @@ mergeableR x y = mi x y + oi x y
 -- assume sorted in ascending order
 -- BORING list collapse
 coll :: (Enum a, Ord a, Semiring a) => [Interval a] -> [Interval a]
-coll = coll' (:)
+coll = coll' (:) (\x y -> getRel $ mergeableL x y)
 
 --coll []  = []
 --coll [x] = [x]
@@ -65,18 +65,37 @@ coll'
      Ord a,
      Semiring a)
   => (Interval a -> t (Interval a) -> t (Interval a)) -- ^ cons
+  -> (Interval a -> Interval a -> Bool)               -- ^ collapse by this metric
   -> t (Interval a)                                   -- ^ structure containing potentially unmerged intervals
   -> t (Interval a)                                   -- ^ collapsed structure
-coll' cons xs
+coll' cons f xs
   | null xs = pure zero
   | length xs == 1 = xs
-  | otherwise = go xs
+  | otherwise = if f x y
+      then coll' cons f ((x<>y) `cons` ys)
+      else x `cons` coll' cons f (y `cons` ys)
   where
-    go ys
-      | getRel $ mergeableL x y = coll' cons ((x <> y) `cons` ((delete cons x ys) + (delete cons y ys)))
-      | otherwise               = x `cons` coll' cons (y `cons` ys)
     x = fromJust $ get 0 xs
     y = fromJust $ get 1 xs
+    ys = delete cons y (delete cons x xs)
+--  
+--  
+--  go xs
+--  where
+--    go ys
+--      | f x y =
+--          (x <> y) `cons` (coll' cons ((delete cons x ys) + (delete cons y ys)))
+--      | otherwise =
+--           x `cons` coll' cons (delete cons x ys)
+--    x = fromJust $ get 0 xs
+--    y = fromJust $ get 1 xs
+
+merge :: Semigroup a => (a -> a -> Bool) -> [a] -> [a]
+merge _ [] = []
+merge _ [x] = [x]
+merge f (x:y:xs) = if f x y
+  then merge f ((x<>y):xs)
+  else x : merge f (y:xs)
 
 -- ^ Delete an element from a foldable structure.
 delete
@@ -99,8 +118,8 @@ deleteN cons n xs = flipTfo xs $ folded . ifiltered (\i _ -> i /= n)
     flipTfo = flip toFoldableOf
     toFoldableOf l = foldrOf l cons zero
 
-deleteList :: Semiring a => Int -> [a] -> [a]
-deleteList = deleteN (:)
+deleteList' :: forall a. (Eq a, Semiring a) => a -> [a] -> [a]
+deleteList' = delete (:)
 
 -- ^ access the nth element of a foldable structure.
 get :: (Foldable t) => Int -> t a -> Maybe a
