@@ -78,6 +78,14 @@ coll' cons xs
     x = fromJust $ get 0 xs
     y = fromJust $ get 1 xs
 
+deleteL :: forall a. a -> [a] -> [a]
+deleteL a xs = foldr f (const []) xs False
+  where
+    f :: a -> (Bool -> [a]) -> (Bool -> [a])
+    f x g found
+      | x == a && not found = g True
+      | otherwise           = x : g found
+
 -- ^ Delete an element from a foldable structure.
 delete
   :: forall a t.
