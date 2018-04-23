@@ -22,9 +22,8 @@ source-repository head
 
 library
   exposed-modules:
-    Data.Discrete 
+    Data.Relation
     Data.Interval
-  
   build-depends:
       base           >= 4.9   && <= 5.0
     , lens 
